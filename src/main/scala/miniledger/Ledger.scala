@@ -30,6 +30,8 @@ final class Ledger private (
       _  <- IO.unlessA(ok)(statuses.remove(id))
     yield Option.when(ok)(id)
 
+  def balance(account: AccountId): IO[Option[BigDecimal]] = state.get.map(_.get(account).map(_.balance))
+
   def status(id: TransferId): IO[Option[Status]] = statuses.get(id)
 
   private def process(q: Queued): IO[Unit] =

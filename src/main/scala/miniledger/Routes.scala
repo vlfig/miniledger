@@ -12,6 +12,7 @@ object Routes:
   private given EntityDecoder[IO, Transfer] = jsonOf[IO, Transfer]
 
   private final case class ErrorBody(error: String) derives Encoder.AsObject
+  private final case class BalanceBody(balance: String) derives Encoder.AsObject
   private final case class AcceptedBody(transferId: TransferId) derives Encoder.AsObject
 
   private def reason(f: DecodeFailure): String = f match
@@ -20,6 +21,14 @@ object Routes:
 
   def routes(ledger: Ledger): HttpRoutes[IO] = HttpRoutes.of[IO] {
     case GET -> Root / "health" => Ok(Json.obj("status" -> Json.fromString("ok")))
+    case GET -> Root / account / "balance" =>
+      account.toIntOption match
+        case None => BadRequest(ErrorBody("account id must be an integer").asJson)
+        case Some(id) =>
+          ledger.balance(id).flatMap {
+            case Some(b) => Ok(BalanceBody(b.bigDecimal.toPlainString).asJson)
+            case None    => NotFound(ErrorBody("account does not exist").asJson)
+          }
     case req @ POST -> Root / "transfer" =>
       req.attemptAs[Transfer].foldF(
         f => BadRequest(ErrorBody(reason(f)).asJson),

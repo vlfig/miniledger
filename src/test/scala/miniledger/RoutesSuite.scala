@@ -89,3 +89,31 @@ object RoutesSuite extends SimpleIOSuite:
       yield expect(a.status == HttpStatus.Accepted) and expect(b.status == HttpStatus.ServiceUnavailable)
     }
   }
+
+  private def balance(app: HttpApp[IO], account: String): IO[Response[IO]] =
+    app.run(Request[IO](Method.GET, Uri.unsafeFromString(s"/$account/balance")))
+
+  private def balanceOf(r: Response[IO]): IO[Option[String]] =
+    r.as[Json].map(_.hcursor.get[String]("balance").toOption)
+
+  test("GET /:account/balance reflects an applied transfer, including negative minting balances") {
+    withApp() { (l, app) =>
+      for
+        r  <- app.run(post(transfer(0, 1, "10.50")))
+        id <- transferId(r)
+        _  <- awaitStatus(l, id)
+        b1 <- balance(app, "1")
+        b0 <- balance(app, "0")
+        s1 <- balanceOf(b1)
+        s0 <- balanceOf(b0)
+      yield expect(b1.status == HttpStatus.Ok) and expect(s1.contains("10.50")) and expect(s0.contains("-10.50"))
+    }
+  }
+
+  test("GET /:account/balance of an unknown account is 404") {
+    withApp()((_, app) => balance(app, "42").map(r => expect(r.status == HttpStatus.NotFound)))
+  }
+
+  test("GET /:account/balance of a non-integer account is 400") {
+    withApp()((_, app) => balance(app, "abc").map(r => expect(r.status == HttpStatus.BadRequest)))
+  }
