@@ -1,3 +1,9 @@
 .idea/
 *.iml
 out/
+target/
+project/target/
+project/project/
+.bsp/
+.metals/
+.bloop/
