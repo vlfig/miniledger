@@ -37,3 +37,5 @@ Debits and credits are appended as transactions get executed. History is kept ac
 balance is just a pure function folding over that sequence of events (only depending on the offset, assuming the log is
 append-only) which can be memoised and kept up-to-date as events happen. This also plays well with the compaction of
 topics in kafka/redpanda.
+
+These are the first thoughts. What survived implementation is distilled in [the spec](./spec.md).
