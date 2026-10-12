@@ -96,6 +96,14 @@ Bodies: a bare array of `{"type": "debit"|"credit", "amount": "10.50", "transfer
 
 Races with the executor, but is eventually correct.
 
+### GET /status/`<transferId>`
+
+Response
+
+`Either[Status, TransferDoesNotExist]`
+
+Bodies: `{"status": "pending"|"applied"|"rejected"}`, plus `"reason": "unknown-source"|"insufficient-funds"` when rejected; or `{"error": "..."}`. 404 for an unknown or malformed id.
+
 ## Implementation overview
 
 ### General notes
