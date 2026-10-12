@@ -1,12 +1,16 @@
 package miniledger
 
 import cats.effect.IO
+import cats.syntax.all.*
 import io.circe.{Encoder, Json}
 import io.circe.syntax.*
 import org.http4s.{DecodeFailure, EntityDecoder, HttpRoutes, InvalidMessageBodyFailure}
 import org.http4s.circe.CirceEntityEncoder.*
 import org.http4s.circe.jsonOf
 import org.http4s.dsl.io.*
+
+import java.util.UUID
+import scala.util.Try
 
 object Routes:
   private given EntityDecoder[IO, Transfer] = jsonOf[IO, Transfer]
@@ -21,6 +25,12 @@ object Routes:
 
   def routes(ledger: Ledger): HttpRoutes[IO] = HttpRoutes.of[IO] {
     case GET -> Root / "health" => Ok(Json.obj("status" -> Json.fromString("ok")))
+
+    case GET -> Root / "tx" / id / "status" =>
+      Try(TransferId(UUID.fromString(id))).toOption.flatTraverse(ledger.status).flatMap {
+        case Some(s) => Ok(s.asJson)
+        case None    => NotFound(ErrorBody("transfer does not exist").asJson)
+      }
     case GET -> Root / account / "balance" =>
       account.toIntOption match
         case None => BadRequest(ErrorBody("account id must be an integer").asJson)

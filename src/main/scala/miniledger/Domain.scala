@@ -58,3 +58,15 @@ enum Rejection:
 enum Status:
   case Pending, Applied
   case Rejected(reason: Rejection)
+
+object Status:
+  // Flat: {"status": "applied"} or {"status": "rejected", "reason": "insufficient-funds"}.
+  given Encoder[Status] = Encoder.instance {
+    case Status.Pending      => Json.obj("status" -> "pending".asJson)
+    case Status.Applied      => Json.obj("status" -> "applied".asJson)
+    case Status.Rejected(r) =>
+      val reason = r match
+        case Rejection.UnknownSource     => "unknown-source"
+        case Rejection.InsufficientFunds => "insufficient-funds"
+      Json.obj("status" -> "rejected".asJson, "reason" -> reason.asJson)
+  }

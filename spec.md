@@ -1,5 +1,6 @@
 # Teya assignment
 
+```
 You are expected to implement a set of apis to power a simple ledger.
 From a functional perspective, the following features should be implemented:
 • Ability to record money movements (ie: deposits and withdrawals)
@@ -16,6 +17,7 @@ that you choose to use).
 You are free to make assumptions whenever you feel it is necessary, but please
 document them.
 Please try to keep it simple.
+```
 
 ---
 
@@ -55,7 +57,7 @@ One API, four endpoints:
 - POST /transfer
 - GET /`<account>`/balance
 - GET /`<account>`/history
-- GET /status/`<transferId>`
+- GET /tx/`<transferId>`/status
 
 The brief does not mention account creation. We could be lazy about it and assume an account gets created whenever there
 is a movement towards it, but where does the money come from? We could have a set of "minting" accounts given as configuration whose balance can go negative. These can always transfer, and thus through the same lazy mechanism create other accounts.
@@ -96,7 +98,7 @@ Bodies: a bare array of `{"type": "debit"|"credit", "amount": "10.50", "transfer
 
 Races with the executor, but is eventually correct.
 
-### GET /status/`<transferId>`
+### GET /tx/`<transferId>`/status
 
 Response
 

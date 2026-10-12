@@ -141,6 +141,46 @@ object RoutesSuite extends SimpleIOSuite:
     }
   }
 
+  private def status(app: HttpApp[IO], id: String): IO[Response[IO]] =
+    app.run(Request[IO](Method.GET, Uri.unsafeFromString(s"/tx/$id/status")))
+
+  test("GET /tx/:id/status reports applied and rejected transfers") {
+    withApp() { (l, app) =>
+      for
+        ok  <- app.run(post(transfer(0, 1, "1"))).flatMap(transferId)
+        bad <- app.run(post(transfer(7, 1, "1"))).flatMap(transferId)
+        _   <- awaitStatus(l, ok)
+        _   <- awaitStatus(l, bad)
+        r1  <- status(app, ok.value.toString)
+        r2  <- status(app, bad.value.toString)
+        b1  <- r1.as[Json]
+        b2  <- r2.as[Json]
+      yield
+        expect(r1.status == HttpStatus.Ok) and
+          expect(b1 == Json.obj("status" -> Json.fromString("applied"))) and
+          expect(b2 == Json.obj("status" -> Json.fromString("rejected"), "reason" -> Json.fromString("unknown-source")))
+    }
+  }
+
+  test("GET /tx/:id/status is pending while the executor has not run") {
+    withApp(run = false) { (_, app) =>
+      for
+        id <- app.run(post(transfer(0, 1, "1"))).flatMap(transferId)
+        r  <- status(app, id.value.toString)
+        b  <- r.as[Json]
+      yield expect(b == Json.obj("status" -> Json.fromString("pending")))
+    }
+  }
+
+  test("GET /tx/:id/status of an unknown or malformed id is 404") {
+    withApp() { (_, app) =>
+      for
+        r1 <- status(app, java.util.UUID.randomUUID.toString)
+        r2 <- status(app, "nope")
+      yield expect(r1.status == HttpStatus.NotFound) and expect(r2.status == HttpStatus.NotFound)
+    }
+  }
+
   test("GET /:account/history of an unknown account is 404") {
     withApp()((_, app) => history(app, "42").map(r => expect(r.status == HttpStatus.NotFound)))
   }

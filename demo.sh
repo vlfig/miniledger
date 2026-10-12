@@ -19,11 +19,16 @@ echo "Balance of minting account 0:"
 curl -s "$URL/0/balance"; echo
 
 echo "Transfer 10.50 from 0 to 1 (accepted, applied asynchronously):"
-curl -s -X POST "$URL/transfer" \
+TRANSFER=$(curl -s -X POST "$URL/transfer" \
   -H 'Content-Type: application/json' \
-  -d '{"from": 0, "to": 1, "amount": "10.50"}'; echo
+  -d '{"from": 0, "to": 1, "amount": "10.50"}')
+echo "$TRANSFER"
+ID=$(sed 's/.*"transferId":"\([^"]*\)".*/\1/' <<< "$TRANSFER")
 
 sleep 0.5 # let the executor catch up; reads are eventually consistent
+
+echo "Status of the transfer:"
+curl -s "$URL/tx/$ID/status"; echo
 
 echo "Balance of account 0 (minting, goes negative):"
 curl -s "$URL/0/balance"; echo
