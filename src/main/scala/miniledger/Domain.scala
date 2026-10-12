@@ -1,6 +1,7 @@
 package miniledger
 
-import io.circe.{Decoder, Encoder}
+import io.circe.{Decoder, Encoder, Json}
+import io.circe.syntax.*
 
 import java.util.UUID
 
@@ -30,6 +31,18 @@ object Transfer:
 sealed trait Op
 final case class Debit(amount: BigDecimal, transfer: TransferId)  extends Op
 final case class Credit(amount: BigDecimal, transfer: TransferId) extends Op
+
+object Op:
+  given Encoder[Op] = Encoder.instance { op =>
+    val (tag, amount, transfer) = op match
+      case Debit(a, t)  => ("debit", a, t)
+      case Credit(a, t) => ("credit", a, t)
+    Json.obj(
+      "type"     -> tag.asJson,
+      "amount"   -> amount.bigDecimal.toPlainString.asJson,
+      "transfer" -> transfer.asJson
+    )
+  }
 
 /** `log` is newest-first. */
 final case class Account(balance: BigDecimal, log: List[Op])

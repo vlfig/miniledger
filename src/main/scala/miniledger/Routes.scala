@@ -29,6 +29,14 @@ object Routes:
             case Some(b) => Ok(BalanceBody(b.bigDecimal.toPlainString).asJson)
             case None    => NotFound(ErrorBody("account does not exist").asJson)
           }
+    case GET -> Root / account / "history" =>
+      account.toIntOption match
+        case None => BadRequest(ErrorBody("account id must be an integer").asJson)
+        case Some(id) =>
+          ledger.history(id).flatMap {
+            case Some(ops) => Ok(ops.asJson)
+            case None      => NotFound(ErrorBody("account does not exist").asJson)
+          }
     case req @ POST -> Root / "transfer" =>
       req.attemptAs[Transfer].foldF(
         f => BadRequest(ErrorBody(reason(f)).asJson),

@@ -117,3 +117,34 @@ object RoutesSuite extends SimpleIOSuite:
   test("GET /:account/balance of a non-integer account is 400") {
     withApp()((_, app) => balance(app, "abc").map(r => expect(r.status == HttpStatus.BadRequest)))
   }
+
+  private def history(app: HttpApp[IO], account: String): IO[Response[IO]] =
+    app.run(Request[IO](Method.GET, Uri.unsafeFromString(s"/$account/history")))
+
+  test("GET /:account/history lists operations newest-first") {
+    withApp() { (l, app) =>
+      for
+        r1 <- app.run(post(transfer(0, 1, "10.50")))
+        id1 <- transferId(r1)
+        r2 <- app.run(post(transfer(1, 2, "3")))
+        id2 <- transferId(r2)
+        _  <- awaitStatus(l, id1)
+        _  <- awaitStatus(l, id2)
+        h  <- history(app, "1")
+        body <- h.as[Json]
+      yield
+        val expected = Json.arr(
+          Json.obj("type" -> Json.fromString("debit"), "amount" -> Json.fromString("3"), "transfer" -> Json.fromString(id2.value.toString)),
+          Json.obj("type" -> Json.fromString("credit"), "amount" -> Json.fromString("10.50"), "transfer" -> Json.fromString(id1.value.toString))
+        )
+        expect(h.status == HttpStatus.Ok) and expect(body == expected)
+    }
+  }
+
+  test("GET /:account/history of an unknown account is 404") {
+    withApp()((_, app) => history(app, "42").map(r => expect(r.status == HttpStatus.NotFound)))
+  }
+
+  test("GET /:account/history of a non-integer account is 400") {
+    withApp()((_, app) => history(app, "abc").map(r => expect(r.status == HttpStatus.BadRequest)))
+  }

@@ -32,6 +32,8 @@ final class Ledger private (
 
   def balance(account: AccountId): IO[Option[BigDecimal]] = state.get.map(_.get(account).map(_.balance))
 
+  def history(account: AccountId): IO[Option[Vector[Op]]] = state.get.map(_.get(account).map(_.log.toVector))
+
   def status(id: TransferId): IO[Option[Status]] = statuses.get(id)
 
   private def process(q: Queued): IO[Unit] =
