@@ -92,6 +92,8 @@ Response
 
 `Either[Vector[Op], AccountDoesNotExist]` (order is newest-first)
 
+Bodies: a bare array of `{"type": "debit"|"credit", "amount": "10.50", "transfer": "<uuid>"}`, or `{"error": "..."}`. 404 for an unknown account, 400 for a non-integer account id.
+
 Races with the executor, but is eventually correct.
 
 ## Implementation overview

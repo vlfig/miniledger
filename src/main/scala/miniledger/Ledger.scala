@@ -20,7 +20,7 @@ final class Ledger private (
     state: Ref[IO, Accounts], // atomic change
     statuses: StatusStore
 ):
-  /** `None` if the queue is full. */
+
   def submit(t: Transfer): IO[Option[TransferId]] =
     for
       id <- IO.randomUUID.map(TransferId(_))
